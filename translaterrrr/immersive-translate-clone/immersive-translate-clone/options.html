@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>沉浸式翻译 - 设置</title>
+<style>
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    max-width: 480px;
+    margin: 40px auto;
+    padding: 0 20px;
+    color: #202124;
+  }
+  h1 { font-size: 20px; color: #1a73e8; }
+  fieldset {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  legend { padding: 0 6px; font-weight: 600; }
+  label { display: block; margin: 10px 0 4px; font-size: 13px; color: #555; }
+  select, input[type=text], input[type=password] {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .radio-row { display: flex; gap: 16px; align-items: center; }
+  .radio-row label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: #202124; }
+  button {
+    padding: 10px 20px;
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #status { margin-left: 12px; font-size: 13px; color: #188038; }
+  p.hint { font-size: 12px; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <h1>沉浸式翻译 — 设置</h1>
+
+  <fieldset>
+    <legend>翻译引擎</legend>
+    <div class="radio-row">
+      <label><input type="radio" name="engine" value="free" /> 免费引擎（默认，无需配置）</label>
+      <label><input type="radio" name="engine" value="gemini" /> Google Gemini</label>
+      <label><input type="radio" name="engine" value="deepseek" /> DeepSeek</label>
+    </div>
+
+    <div id="geminiFields">
+      <label>Gemini API Key</label>
+      <input type="password" id="geminiApiKey" placeholder="AIza..." />
+      <p class="hint">在 Google AI Studio 获取：https://aistudio.google.com/apikey</p>
+
+      <label>模型</label>
+      <select id="geminiModel">
+        <option value="gemini-2.0-flash">gemini-2.0-flash（推荐，速度快）</option>
+        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+        <option value="gemini-1.5-pro">gemini-1.5-pro（质量更高，更慢）</option>
+      </select>
+    </div>
+
+    <div id="deepseekFields">
+      <label>DeepSeek API Key</label>
+      <input type="password" id="deepseekApiKey" placeholder="sk-..." />
+      <p class="hint">在 DeepSeek 开放平台获取：https://platform.deepseek.com/api_keys</p>
+
+      <label>模型</label>
+      <select id="deepseekModel">
+        <option value="deepseek-chat">deepseek-chat（通用，推荐）</option>
+        <option value="deepseek-reasoner">deepseek-reasoner（推理模型，更慢更贵）</option>
+      </select>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>翻译目标语言</legend>
+    <select id="targetLang">
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁体中文</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="es">Español</option>
+    </select>
+  </fieldset>
+
+  <button id="saveBtn">保存设置</button>
+  <span id="status"></span>
+
+  <script src="options.js"></script>
+</body>
+</html>
