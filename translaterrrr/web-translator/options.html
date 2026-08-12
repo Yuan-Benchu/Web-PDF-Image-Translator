@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Web Translator — Settings</title>
+<style>
+  :root { --accent:#1a73e8; --line:#dadce0; }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;max-width:760px;margin:36px auto;padding:0 20px;color:#202124;background:#fff;}
+  h1{font-size:20px;color:var(--accent);margin:0 0 20px;}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:18px;}
+  legend{padding:0 6px;font-weight:600;font-size:14px;}
+  label{display:block;margin:10px 0 4px;font-size:13px;color:#5f6368;}
+  input[type=text],input[type=password],select{width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:6px;font-size:14px;}
+  button{padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;}
+  button.ghost{background:#e8eaed;color:#3c4043;}
+  button.danger{background:#d93025;}
+  button.sm{padding:5px 10px;font-size:12px;}
+  p.hint{font-size:12px;color:#80868b;margin:4px 0 0;}
+  .prov{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;}
+  .prov.active{border-color:var(--accent);background:#f8fbff;}
+  .prov-head{display:flex;align-items:center;gap:10px;}
+  .prov-head b{flex:1;font-size:14px;}
+  .prov-body{display:none;margin-top:10px;}
+  .prov.open .prov-body{display:block;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .chk{display:flex;align-items:center;gap:7px;font-size:14px;color:#202124;margin:0;}
+  .badge{font-size:11px;padding:2px 7px;border-radius:10px;background:#e8eaed;color:#5f6368;}
+  .badge.on{background:#e6f4ea;color:#137333;}
+  pre{background:#f1f3f4;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;word-break:break-word;margin-top:12px;}
+  #status{margin-left:10px;font-size:13px;color:#137333;}
+</style>
+</head>
+<body>
+  <h1>Web Translator — Settings</h1>
+
+  <fieldset>
+    <legend>Translation engine</legend>
+    <div class="prov" id="freeProv">
+      <div class="prov-head">
+        <input type="radio" name="engine" value="free" id="engFree" />
+        <b>Free engine</b>
+        <span class="badge">no API key</span>
+      </div>
+      <p class="hint">Public Google Translate endpoint. Fast and free, but rate-limited and no image OCR.</p>
+    </div>
+
+    <div id="providerList"></div>
+
+    <div class="row" style="margin-top:12px;">
+      <select id="presetSelect" style="flex:1;"></select>
+      <button id="addBtn" class="sm">Add provider</button>
+    </div>
+    <p class="hint">Add any provider you like — anything OpenAI-compatible works, plus Anthropic and Gemini formats.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Target language</legend>
+    <select id="targetLang">
+      <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+      <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+      <option value="es">Español</option>
+      <option value="ru">Русский</option>
+      <option value="pt">Português</option>
+      <option value="it">Italiano</option>
+      <option value="ar">العربية</option>
+      <option value="th">ไทย</option>
+      <option value="vi">Tiếng Việt</option>
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Images &amp; performance</legend>
+    <label class="chk"><input type="checkbox" id="translateImages" /> Translate text inside images (OCR)</label>
+    <p class="hint">Needs a vision-capable provider (Gemini, GPT-4o, Claude, Qwen-VL, GLM-4V…). Also toggleable from the popup.</p>
+
+    <label>Parallel requests: <span id="concVal">16</span></label>
+    <input type="range" id="concurrency" min="4" max="32" step="2" style="width:100%;" />
+    <p class="hint">Higher = faster on big pages, but more likely to hit rate limits. 16 is a good default.</p>
+
+    <div class="row" style="margin-top:12px;">
+      <button id="clearCacheBtn" class="ghost sm">Clear translation cache</button>
+      <span id="cacheMsg" class="hint"></span>
+    </div>
+  </fieldset>
+
+  <button id="saveBtn">Save settings</button>
+  <button id="testBtn" class="ghost">Test connection</button>
+  <span id="status"></span>
+  <pre id="testResult" style="display:none;"></pre>
+
+  <script src="options.js"></script>
+</body>
+</html>

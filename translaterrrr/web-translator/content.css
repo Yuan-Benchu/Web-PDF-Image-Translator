@@ -1,0 +1,110 @@
+/* Translation text — rendered as its own line inside the original element,
+   so it never breaks table rows, flex layouts or grid cells. */
+.immt-inserted {
+  display: block !important;
+  width: auto !important;
+  max-width: 100% !important;
+  margin: 3px 0 1px !important;
+  padding: 0 0 0 8px !important;
+  border-left: 2px solid rgba(26, 115, 232, 0.45) !important;
+  color: #1558b0 !important;
+  font-size: 0.92em !important;
+  line-height: 1.55 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  background: none !important;
+  float: none !important;
+  position: static !important;
+  vertical-align: baseline !important;
+  box-sizing: border-box !important;
+  opacity: 0.95;
+}
+
+/* Dark-background pages */
+@media (prefers-color-scheme: dark) {
+  .immt-inserted {
+    color: #8ab4f8 !important;
+    border-left-color: rgba(138, 180, 248, 0.5) !important;
+  }
+}
+
+/* Caption under a translated image */
+.immt-img-cap {
+  display: block !important;
+  margin: 4px 0 8px !important;
+  padding: 6px 10px !important;
+  background: rgba(26, 115, 232, 0.07) !important;
+  border-left: 2px solid rgba(26, 115, 232, 0.45) !important;
+  border-radius: 4px !important;
+  color: #1558b0 !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+}
+
+/* Status toast */
+.immt-toast {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  background: rgba(32, 33, 36, 0.92) !important;
+  color: #fff !important;
+  padding: 9px 14px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", Arial, sans-serif !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+  max-width: 380px !important;
+  line-height: 1.5 !important;
+  word-break: break-word !important;
+  pointer-events: none !important;
+}
+
+.immt-toast-error {
+  background: #c5221f !important;
+}
+
+/* ---- Overlay layer for editable documents ----
+   Translations for contenteditable regions are drawn here instead of being
+   injected into the document, so the user's file is never modified. */
+.immt-overlay-layer {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.immt-overlay {
+  position: absolute !important;
+  box-sizing: border-box !important;
+  margin: 2px 0 0 !important;
+  padding: 2px 0 2px 8px !important;
+  border-left: 2px solid rgba(26, 115, 232, 0.45) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(1px);
+  color: #1558b0 !important;
+  font-size: 13px !important;
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif !important;
+  line-height: 1.5 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  border-radius: 3px !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06) !important;
+}

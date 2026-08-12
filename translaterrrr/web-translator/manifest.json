@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "沉浸式翻译（简化版）",
-  "version": "0.1.0",
-  "description": "网页双语对照翻译插件，支持免费翻译API与自定义Gemini API",
-  "default_locale": "zh_CN",
+  "name": "__MSG_extName__",
+  "version": "0.5.0",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -35,9 +35,15 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -46,7 +52,21 @@
       "suggested_key": {
         "default": "Alt+T"
       },
-      "description": "开启/关闭当前页面翻译"
+      "description": "Toggle translation on/off for current page"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "pdfjs/*",
+        "pdf.html",
+        "pdf.js",
+        "doc.html",
+        "doc.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }

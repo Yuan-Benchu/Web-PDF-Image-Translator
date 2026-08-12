@@ -1,0 +1,8 @@
+{
+  "extName": {
+    "message": "Web Translator"
+  },
+  "extDescription": {
+    "message": "Bilingual side-by-side webpage translator, with free engine and optional Gemini/DeepSeek API"
+  }
+}

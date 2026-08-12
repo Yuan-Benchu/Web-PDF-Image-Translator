@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Document Translator</title>
+<style>
+  :root{--accent:#1a73e8;--line:#dadce0;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#f1f3f4;color:#202124;height:100vh;display:flex;flex-direction:column;}
+  header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  header h1{font-size:15px;margin:0;color:var(--accent);white-space:nowrap;}
+  button{padding:7px 14px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;}
+  button.ghost{background:#e8eaed;color:#3c4043;}
+  button:disabled{opacity:.5;cursor:default;}
+  #status{margin-left:auto;font-size:13px;color:#5f6368;}
+  main{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);overflow:hidden;}
+  .pane{background:#fff;display:flex;flex-direction:column;overflow:hidden;}
+  .pane-head{padding:8px 14px;font-size:12px;font-weight:600;color:#5f6368;border-bottom:1px solid var(--line);background:#fafafa;display:flex;align-items:center;gap:8px;}
+  .pane-body{flex:1;overflow-y:auto;padding:16px 18px;}
+  textarea{width:100%;height:100%;border:none;outline:none;resize:none;font-family:inherit;font-size:14px;line-height:1.7;color:#202124;}
+  .seg{padding:6px 0;border-bottom:1px solid #f1f3f4;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+  .seg.tr{color:#1558b0;}
+  .seg.pending{color:#bdc1c6;font-style:italic;}
+  .empty{color:#80868b;font-size:14px;padding:20px;text-align:center;line-height:1.7;}
+  .hint{font-size:12px;color:#80868b;padding:0 18px 12px;}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Document Translator</h1>
+    <button id="translateBtn">Translate</button>
+    <button id="copyBtn" class="ghost">Copy translation</button>
+    <button id="clearBtn" class="ghost">Clear</button>
+    <button id="settingsBtn" class="ghost">Settings</button>
+    <span id="status">Ready</span>
+  </header>
+
+  <main>
+    <div class="pane">
+      <div class="pane-head">Original — paste or edit freely</div>
+      <div class="pane-body" style="padding:0;">
+        <textarea id="src" placeholder="Paste the text from your document here.&#10;&#10;If you opened this from a page with an editable document, its text was imported automatically.&#10;&#10;Each blank-line-separated paragraph is translated as one block."></textarea>
+      </div>
+    </div>
+    <div class="pane">
+      <div class="pane-head">Translation</div>
+      <div class="pane-body" id="out">
+        <div class="empty">The translation appears here.<br />Your original document is never modified.</div>
+      </div>
+    </div>
+  </main>
+<script src="doc.js"></script>
+</body>
+</html>
