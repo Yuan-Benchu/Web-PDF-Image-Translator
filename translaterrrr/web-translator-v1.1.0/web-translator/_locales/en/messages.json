@@ -1,0 +1,89 @@
+{
+  "extName": {
+    "message": "Web Translator"
+  },
+  "extDescription": {
+    "message": "Bilingual side-by-side webpage translator, with a free engine and optional AI providers"
+  },
+  "toastDone": {
+    "message": "Translated $COUNT$ blocks. Keep scrolling for more.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toastDonePartial": {
+    "message": "Translated $DONE$ blocks, $FAILED$ failed",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "failed": {
+        "content": "$2"
+      }
+    }
+  },
+  "toastProgress": {
+    "message": "Translating... $DONE$/$TOTAL$",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "toastExtError": {
+    "message": "Extension error:"
+  },
+  "toastFailed": {
+    "message": "Translation failed:"
+  },
+  "toastNothing": {
+    "message": "No translatable content found on this page"
+  },
+  "errNoApiKey": {
+    "message": "API key is not set. Open the settings page to add one."
+  },
+  "errNoBaseUrl": {
+    "message": "Base URL is not set."
+  },
+  "errBadKey": {
+    "message": "The API key is invalid or lacks permission."
+  },
+  "errNoCredit": {
+    "message": "The account has no remaining credit."
+  },
+  "errBadEndpoint": {
+    "message": "The endpoint URL or the model name is wrong."
+  },
+  "errProviderMissing": {
+    "message": "The selected translation service was not found. Check the settings page."
+  },
+  "errImgDownload": {
+    "message": "Could not download the image."
+  },
+  "errImgTooBig": {
+    "message": "The image is too large (over 5MB)."
+  },
+  "errNeedVisionProvider": {
+    "message": "Image OCR needs an AI provider with vision support. Pick one in settings."
+  },
+  "errNoVision": {
+    "message": "this provider has no vision support. Use one that does, such as Gemini, GPT-4o or Claude."
+  },
+  "errEmptyModelList": {
+    "message": "The endpoint returned an empty model list."
+  },
+  "docPending": {
+    "message": "Translating..."
+  },
+  "docFailed": {
+    "message": "Failed:"
+  },
+  "docNotTranslated": {
+    "message": "(not translated)"
+  }
+}

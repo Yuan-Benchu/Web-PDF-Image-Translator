@@ -1,13 +1,42 @@
-// content.js — scans page text and inserts non-destructive bilingual translations
+// content.js - scans page text and inserts non-destructive bilingual translations.
+// ASCII only. All user-facing strings live in _locales/*/messages.json.
 
 (() => {
   const MARK = "data-immt";
   const BATCH_SIZE = 40;
   const MIN_LEN = 2;
+
+  // A translation line needs real horizontal room. Anything narrower than this
+  // renders one character per line (the vertical-column bug), so we refuse to
+  // insert there at all.
+  const MIN_INSERT_WIDTH = 80;   // px of usable content width required
+  const MIN_SPAN_WIDTH = 60;     // px the inserted line must actually occupy
+  const MIN_BOX = 6;             // px: anything smaller is a screen-reader box
+  const OVERLAY_MIN_WIDTH = 260;
+
   const SKIP_TAGS = new Set([
     "SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "CODE", "PRE",
-    "IFRAME", "SVG", "CANVAS", "OPTION", "SELECT", "BUTTON",
+    "IFRAME", "SVG", "CANVAS", "OPTION", "SELECT", "BUTTON", "TITLE",
+    "HEAD", "META", "LINK", "TEMPLATE", "MAP", "AREA",
   ]);
+
+  // Class names every major framework uses for screen-reader-only text.
+  // Canvas LMS, Bootstrap, WordPress, Material, jQuery UI, Drupal, GOV.UK...
+  const SR_ONLY_SELECTOR = [
+    "[aria-hidden='true']", "[hidden]",
+    ".screenreader-only", ".screen-reader-only", ".screen-reader-text",
+    ".sr-only", ".sr-only-focusable", ".srOnly",
+    ".visually-hidden", ".visuallyhidden", ".visually-hidden-focusable",
+    ".hidden-visually", ".a11y-hidden", ".accessibly-hidden",
+    ".assistive-text", ".ui-helper-hidden-accessible",
+    ".element-invisible", ".hide-text", ".govuk-visually-hidden",
+    ".MuiBox-visuallyHidden", ".offscreen", ".off-screen",
+  ].join(",");
+
+  const t = (key, subs) => {
+    try { return chrome.i18n.getMessage(key, subs) || key; }
+    catch (e) { return key; }
+  };
 
   let enabled = false;
   let observer = null;
@@ -22,6 +51,7 @@
     if (!toastEl) {
       toastEl = document.createElement("div");
       toastEl.className = "immt-toast";
+      toastEl.setAttribute("translate", "no");
       document.documentElement.appendChild(toastEl);
     }
     toastEl.textContent = msg;
@@ -42,29 +72,74 @@
     return v;
   }
 
+  // ---------- visibility ----------
+  // The root cause of the broken layout report: text that is present in the DOM
+  // but visually hidden (screen-reader labels, clipped 1px boxes, off-screen
+  // helpers) was being translated. Its container is ~1px wide, so the inserted
+  // line wrapped after every single character and produced vertical columns of
+  // text scattered across the page. Nothing visually hidden is ever translated.
+  function isVisuallyHidden(el) {
+    const st = cs(el);
+    if (st.display === "none") return true;
+    if (st.visibility === "hidden" || st.visibility === "collapse") return true;
+    if (parseFloat(st.opacity || "1") === 0) return true;
+    if (st.contentVisibility === "hidden") return true;
+
+    // rect(1px,1px,1px,1px) / rect(0,0,0,0) - the classic clipping trick
+    if (st.clip && st.clip !== "auto" && st.clip !== "" && /rect\(/.test(st.clip)) return true;
+    if (st.clipPath && st.clipPath !== "none" && /inset\(\s*(?:100%|50%)/.test(st.clipPath)) return true;
+
+    // A 1px x 1px (or 0-sized) box can never hold a readable line of text.
+    const r = el.getBoundingClientRect();
+    if (r.width < MIN_BOX || r.height < MIN_BOX) return true;
+
+    // Parked far off-screen
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    if (r.right < -2000 || r.bottom < -5000) return true;
+    if (r.left > vw + 5000) return true;
+
+    return false;
+  }
+
+  // Hidden-ness is inherited: a visible <b> inside a clipped 1px <span> is still
+  // invisible, so walk a few ancestors as well.
+  function isHiddenChain(el) {
+    let cur = el;
+    let depth = 0;
+    while (cur && cur.nodeType === 1 && cur !== document.body && depth++ < 8) {
+      if (isVisuallyHidden(cur)) return true;
+      cur = cur.parentElement;
+    }
+    return false;
+  }
+
   // ---------- filtering ----------
   function isTranslatableTextNode(node) {
     const text = node.nodeValue.trim();
     if (text.length < MIN_LEN) return false;
-    if (/^[\d\s\.\,\-\+\%\$\#\@\!\?\(\)\[\]\|\/\\:;"'`~*_=<>{}]+$/.test(text)) return false;
-    // skip text that is already mostly Chinese (target language)
+    if (/^[\d\s.,\-+%$#@!?()\[\]|/\\:;"'`~*_=<>{}]+$/.test(text)) return false;
+
+    // skip text that is already mostly in the target script
     const cjk = (text.match(/[\u4e00-\u9fff]/g) || []).length;
     if (cjk / text.length > 0.3) return false;
+
     const parent = node.parentElement;
     if (!parent) return false;
     if (SKIP_TAGS.has(parent.tagName)) return false;
     if (parent.closest(`[${MARK}]`)) return false;
-    if (parent.closest(".immt-inserted, .immt-toast, .immt-img-cap, .immt-overlay")) return false;
+    if (parent.closest(".immt-inserted,.immt-toast,.immt-img-cap,.immt-overlay")) return false;
 
-    // Short labels inside chrome/navigation are the main cause of broken layouts
-    // (fixed-height rows, absolutely positioned menus). Skip them.
+    // Never translate accessibility-only text.
+    if (parent.closest(SR_ONLY_SELECTOR)) return false;
+
+    // Short labels inside chrome/navigation break fixed-height rows.
     if (text.length < 14 && parent.closest(
       "nav,[role='navigation'],[role='menu'],[role='menubar'],[role='tablist']," +
       "[role='toolbar'],[role='tab'],[role='menuitem'],button,[role='button']," +
       "[role='listitem'] > [role='button'],thead,th"
     )) return false;
-    const st = cs(parent);
-    if (st.display === "none" || st.visibility === "hidden" || st.opacity === "0") return false;
+
+    if (isHiddenChain(parent)) return false;
     return true;
   }
 
@@ -92,14 +167,69 @@
     return el;
   }
 
+  // Tags whose text is never painted. Inline tags such as CODE, KBD or ABBR
+  // are deliberately absent: their words are part of the surrounding sentence.
+  const NON_RENDERED_TAGS = new Set([
+    "SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "HEAD", "META", "LINK", "TITLE",
+  ]);
+
+  // innerText still returns text from clipped screen-reader spans, which would
+  // otherwise be sent to the translator and shown to the reader as noise
+  // ("Due 27 Oct | -/15 pts" + "Not submitted for this assignment..."), so the
+  // source string is rebuilt from visible text nodes only.
+  function blockText(el) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        const v = n.nodeValue;
+        if (!v || !v.trim()) return NodeFilter.FILTER_REJECT;
+        const pe = n.parentElement;
+        if (!pe) return NodeFilter.FILTER_REJECT;
+        if (NON_RENDERED_TAGS.has(pe.tagName)) return NodeFilter.FILTER_REJECT;
+        if (pe.classList.contains("immt-inserted")) return NodeFilter.FILTER_REJECT;
+        if (pe.closest(".immt-inserted,.immt-img-cap,.immt-overlay")) return NodeFilter.FILTER_REJECT;
+        const sr = pe.closest(SR_ONLY_SELECTOR);
+        if (sr && (sr === el || el.contains(sr))) return NodeFilter.FILTER_REJECT;
+        if (pe !== el && el.contains(pe) && isHiddenChain(pe)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    // Raw node values are kept (only collapsed) rather than trimmed-and-joined,
+    // so "<code>MutationObserver</code>'s queue" stays glued and does not become
+    // "MutationObserver 's queue". A space is added only where two different
+    // block-level children meet, which is where a line break really was.
+    const parts = [];
+    let prevBlock = null;
+    let n;
+    while ((n = walker.nextNode())) {
+      const blk = findBlockAncestor(n.parentElement);
+      if (prevBlock && blk !== prevBlock) parts.push(" ");
+      parts.push(n.nodeValue.replace(/\s+/g, " "));
+      prevBlock = blk;
+    }
+    return parts.join("").replace(/\s+/g, " ").trim();
+  }
+
+  // Usable inner width: how much horizontal room a translation line would get.
+  function usableWidth(el) {
+    const r = el.getBoundingClientRect();
+    const st = cs(el);
+    const pl = parseFloat(st.paddingLeft) || 0;
+    const pr = parseFloat(st.paddingRight) || 0;
+    return r.width - pl - pr;
+  }
+
   const MAX_BLOCKS_PER_PASS = 600;
 
   function pickBlocks(textNodes) {
     const set = new Set();
     for (const tn of textNodes) {
       const b = findBlockAncestor(tn.parentElement);
-      const t = (b.innerText || "").trim();
-      if (!t || t.length > 2000) continue;
+      const txt = blockText(b);
+      if (!txt || txt.length > 2000) continue;
+      if (b.closest(SR_ONLY_SELECTOR)) continue;
+      if (isHiddenChain(b)) continue;
+      // Too narrow to ever hold a line of translated text.
+      if (usableWidth(b) < MIN_INSERT_WIDTH) continue;
       set.add(b);
     }
     let arr = [...set];
@@ -133,8 +263,8 @@
     if (!el) return false;
     if (el.isContentEditable) return true;
     return !!el.closest?.(
-      "[contenteditable='true'],[contenteditable='']," +
-      "[role='textbox'],[role='document'],.docs-texteventtarget-iframe"
+      "[contenteditable='true'],[contenteditable=''],[role='textbox']," +
+      "[role='document'],.docs-texteventtarget-iframe"
     );
   }
 
@@ -142,8 +272,8 @@
     if (overlayLayer && overlayLayer.isConnected) return overlayLayer;
     overlayLayer = document.createElement("div");
     overlayLayer.className = "immt-overlay-layer";
-    // contenteditable=false + inert-ish so editors ignore it entirely
     overlayLayer.setAttribute("contenteditable", "false");
+    overlayLayer.setAttribute("translate", "no");
     document.body.appendChild(overlayLayer);
     window.addEventListener("scroll", scheduleReposition, true);
     window.addEventListener("resize", scheduleReposition);
@@ -162,6 +292,7 @@
   function repositionOverlays() {
     if (!overlayPairs.length) return;
     const sx = window.scrollX, sy = window.scrollY;
+    const vw = window.innerWidth || document.documentElement.clientWidth;
     for (let i = overlayPairs.length - 1; i >= 0; i--) {
       const { block, el } = overlayPairs[i];
       if (!block.isConnected) {
@@ -170,41 +301,65 @@
         continue;
       }
       const r = block.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) {
+      if (r.width < MIN_BOX || r.height < MIN_BOX) {
         el.style.display = "none";
         continue;
       }
+      // An overlay narrower than a word wraps one character per line. Give it a
+      // sane minimum and keep it inside the viewport.
+      const left = Math.max(0, Math.min(r.left, vw - 40));
+      const width = Math.max(OVERLAY_MIN_WIDTH, Math.min(r.width, vw - left - 12));
       el.style.display = "block";
-      el.style.left = r.left + sx + "px";
+      el.style.left = left + sx + "px";
       el.style.top = r.bottom + sy + "px";
-      el.style.width = r.width + "px";
+      el.style.width = width + "px";
     }
   }
 
   function insertOverlayTranslation(block, translated) {
+    const r = block.getBoundingClientRect();
+    // Never float an overlay off a box that has no real size.
+    if (r.width < MIN_BOX || r.height < MIN_BOX) return false;
     const layer = ensureOverlayLayer();
     const el = document.createElement("div");
     el.className = "immt-overlay";
     el.setAttribute("contenteditable", "false");
+    el.setAttribute("translate", "no");
     el.textContent = translated;
     layer.appendChild(el);
     overlayPairs.push({ block, el });
     scheduleReposition();
+    return true;
+  }
+
+  // Reject a rendered line that came out as a vertical stack of characters.
+  function looksVertical(span) {
+    const r = span.getBoundingClientRect();
+    if (r.width < MIN_SPAN_WIDTH) return true;
+    // Tall and thin means the text wrapped character-by-character.
+    if (r.width < 160 && r.height > r.width * 2.5) return true;
+    return false;
   }
 
   function insertTranslation(block, translated) {
     if (!translated || block.getAttribute(MARK)) return false;
-    const original = (block.innerText || "").trim();
+    const original = blockText(block);
     if (translated.trim() === original) {
       block.setAttribute(MARK, "same");
       return false;
     }
+
+    // Final safety net before touching the DOM.
+    if (isHiddenChain(block) || usableWidth(block) < MIN_INSERT_WIDTH) {
+      block.setAttribute(MARK, "narrow");
+      return false;
+    }
+
     block.setAttribute(MARK, "1");
 
     if (isEditable(block)) {
-      // Never touch the document itself — float the translation above it.
-      insertOverlayTranslation(block, translated);
-      return true;
+      // Never touch the document itself - float the translation above it.
+      return insertOverlayTranslation(block, translated);
     }
 
     // Measure the nearest clipping/positioned ancestor BEFORE inserting so we
@@ -214,8 +369,16 @@
 
     const span = document.createElement("span");
     span.className = "immt-inserted";
+    span.setAttribute("translate", "no");
     span.textContent = translated;
     block.appendChild(span);
+
+    // Verify what actually rendered. If it stacked vertically, back it out.
+    if (looksVertical(span)) {
+      span.remove();
+      block.setAttribute(MARK, "narrow");
+      return false;
+    }
 
     // If the container clips its content (fixed height + hidden overflow) or is
     // absolutely positioned, adding a line can overlap neighbouring UI. Detect
@@ -227,8 +390,10 @@
       const risky = guard.absolute || /hidden|clip/.test(st.overflowY);
       if (risky && (clipped || (guard.absolute && grew))) {
         span.remove();
-        insertOverlayTranslation(block, translated);
-        return true;
+        if (!insertOverlayTranslation(block, translated)) {
+          block.setAttribute(MARK, "narrow");
+          return false;
+        }
       }
     }
     return true;
@@ -242,8 +407,7 @@
       const st = cs(cur);
       const absolute = st.position === "absolute" || st.position === "fixed";
       const clips = /hidden|clip|auto/.test(st.overflowY) && st.overflowY !== "visible";
-      const fixedH = /px$/.test(st.height) && parseFloat(st.height) > 0 &&
-                     (clips || absolute);
+      const fixedH = /px$/.test(st.height) && parseFloat(st.height) > 0 && (clips || absolute);
       if (absolute || (clips && fixedH)) return { el: cur, absolute };
       cur = cur.parentElement;
     }
@@ -259,64 +423,61 @@
       if (!img.src || img.src.startsWith("data:image/gif")) return false;
       return true;
     });
-    return imgs.slice(0, 12); // cap per pass — vision calls are expensive
+    return imgs.slice(0, 12); // cap per pass - vision calls are expensive
   }
 
   function translateImages(imgs) {
     imgs.forEach((img) => {
       img.setAttribute(MARK, "img-pending");
-      chrome.runtime.sendMessage(
-        { type: "TRANSLATE_IMAGE", src: img.src },
-        (resp) => {
-          if (chrome.runtime.lastError || !resp?.ok) {
-            img.setAttribute(MARK, "img-failed");
-            return;
-          }
-          const text = (resp.text || "").trim();
-          if (!text || text === "NO_TEXT") {
-            img.setAttribute(MARK, "img-none");
-            return;
-          }
-          img.setAttribute(MARK, "img-done");
-          const cap = document.createElement("div");
-          cap.className = "immt-img-cap";
-          cap.textContent = text;
-          img.insertAdjacentElement("afterend", cap);
+      chrome.runtime.sendMessage({ type: "TRANSLATE_IMAGE", src: img.src }, (resp) => {
+        if (chrome.runtime.lastError || !resp?.ok) {
+          img.setAttribute(MARK, "img-failed");
+          return;
         }
-      );
+        const text = (resp.text || "").trim();
+        if (!text || text === "NO_TEXT") {
+          img.setAttribute(MARK, "img-none");
+          return;
+        }
+        img.setAttribute(MARK, "img-done");
+        const cap = document.createElement("div");
+        cap.className = "immt-img-cap";
+        cap.setAttribute("translate", "no");
+        cap.textContent = text;
+        img.insertAdjacentElement("afterend", cap);
+      });
     });
   }
 
   // ---------- progress ----------
   function updateProgress() {
     if (stats.done + stats.failed >= stats.total) {
-      const msg =
-        stats.failed > 0
-          ? `已翻译 ${stats.done} 段，${stats.failed} 段失败`
-          : `已翻译 ${stats.done} 段 ✓ 继续滚动翻译更多`;
+      const msg = stats.failed > 0
+        ? t("toastDonePartial", [String(stats.done), String(stats.failed)])
+        : t("toastDone", [String(stats.done)]);
       showToast(msg, stats.failed > 0, true);
     } else {
-      showToast(`翻译中… ${stats.done + stats.failed}/${stats.total}`);
+      showToast(t("toastProgress", [String(stats.done + stats.failed), String(stats.total)]));
     }
   }
 
   function translateBatch(blocks) {
-    const texts = blocks.map((b) => (b.innerText || "").trim());
+    const texts = blocks.map(blockText);
     chrome.runtime.sendMessage({ type: "TRANSLATE_BATCH", texts }, (resp) => {
       if (chrome.runtime.lastError) {
         stats.failed += blocks.length;
-        showToast("扩展错误：" + chrome.runtime.lastError.message, true);
+        showToast(t("toastExtError") + " " + chrome.runtime.lastError.message, true);
         return;
       }
       if (!resp?.ok) {
         stats.failed += blocks.length;
         console.error("[Web Translator]", resp?.error);
-        showToast("翻译失败：" + String(resp?.error || "").slice(0, 180), true);
+        showToast(t("toastFailed") + " " + String(resp?.error || "").slice(0, 180), true);
         return;
       }
-      resp.results.forEach((t, i) => {
-        if (t) {
-          insertTranslation(blocks[i], t);
+      resp.results.forEach((tr, i) => {
+        if (tr) {
+          insertTranslation(blocks[i], tr);
           stats.done++;
         } else {
           stats.failed++;
@@ -327,12 +488,10 @@
   }
 
   // ---------- viewport-priority queue ----------
-  // Blocks near/in the viewport get translated first; the rest are translated
-  // as they scroll into view. This makes long pages feel instant.
-  let queue = [];              // blocks waiting to be translated
-  let io = null;               // IntersectionObserver for lazy blocks
+  let queue = [];
+  let io = null;
   let dispatchTimer = null;
-  let queued = new WeakSet();  // blocks already queued/observed
+  let queued = new WeakSet();
 
   function inViewport(el, margin = 300) {
     const r = el.getBoundingClientRect();
@@ -342,22 +501,19 @@
 
   function ensureIO() {
     if (io) return io;
-    io = new IntersectionObserver(
-      (entries) => {
-        let hit = false;
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            io.unobserve(e.target);
-            if (!e.target.getAttribute(MARK)) {
-              queue.push(e.target);
-              hit = true;
-            }
+    io = new IntersectionObserver((entries) => {
+      let hit = false;
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          io.unobserve(e.target);
+          if (!e.target.getAttribute(MARK)) {
+            queue.push(e.target);
+            hit = true;
           }
         }
-        if (hit) scheduleDispatch();
-      },
-      { rootMargin: "400px 0px" }
-    );
+      }
+      if (hit) scheduleDispatch();
+    }, { rootMargin: "400px 0px" });
     return io;
   }
 
@@ -366,14 +522,13 @@
     dispatchTimer = setTimeout(() => {
       dispatchTimer = null;
       dispatchQueue();
-    }, 120); // coalesce bursts of scroll events into one dispatch
+    }, 120);
   }
 
   function dispatchQueue() {
     if (!enabled || !queue.length) return;
-    const batchBlocks = queue.splice(0, queue.length).filter(
-      (b) => b.isConnected && !b.getAttribute(MARK)
-    );
+    const batchBlocks = queue.splice(0, queue.length)
+      .filter((b) => b.isConnected && !b.getAttribute(MARK));
     if (!batchBlocks.length) return;
 
     stats.total += batchBlocks.length;
@@ -385,9 +540,8 @@
 
   function scanAndTranslate(root = document.body) {
     styleCache = new WeakMap(); // styles change between passes
-    const blocks = pickBlocks(collectTextNodes(root)).filter(
-      (b) => !b.getAttribute(MARK) && !queued.has(b)
-    );
+    const blocks = pickBlocks(collectTextNodes(root))
+      .filter((b) => !b.getAttribute(MARK) && !queued.has(b));
 
     if (settings.translateImages) {
       const imgs = collectImages(root);
@@ -396,21 +550,17 @@
 
     if (!blocks.length) {
       if (root === document.body && !stats.total) {
-        showToast("本页没有找到需要翻译的内容", true, true);
+        showToast(t("toastNothing"), true, true);
       }
       return;
     }
 
-    // Split: visible now vs. below the fold
     const visible = [];
-    const observer2 = ensureIO();
+    const lazy = ensureIO();
     for (const b of blocks) {
       queued.add(b);
-      if (inViewport(b)) {
-        visible.push(b);
-      } else {
-        observer2.observe(b); // translate lazily when scrolled into view
-      }
+      if (inViewport(b)) visible.push(b);
+      else lazy.observe(b);
     }
 
     if (visible.length) {
@@ -419,8 +569,26 @@
     }
   }
 
+  // ---------- sweep: catch content rendered later by SPA frameworks ----------
+  let sweepTimer = null;
+  let sweepsLeft = 0;
+  function startSweep() {
+    stopSweep();
+    sweepsLeft = 20;
+    sweepTimer = setInterval(() => {
+      if (!enabled || sweepsLeft-- <= 0) { stopSweep(); return; }
+      scanAndTranslate();
+      scheduleReposition();
+    }, 2500);
+  }
+  function stopSweep() {
+    if (sweepTimer) clearInterval(sweepTimer);
+    sweepTimer = null;
+  }
+
   function removeAll() {
-    document.querySelectorAll(".immt-inserted, .immt-img-cap, .immt-overlay").forEach((e) => e.remove());
+    document.querySelectorAll(".immt-inserted,.immt-img-cap,.immt-overlay")
+      .forEach((e) => e.remove());
     document.querySelectorAll(`[${MARK}]`).forEach((e) => e.removeAttribute(MARK));
   }
 
@@ -432,6 +600,8 @@
             n.nodeType === Node.ELEMENT_NODE &&
             !n.classList?.contains("immt-inserted") &&
             !n.classList?.contains("immt-img-cap") &&
+            !n.classList?.contains("immt-overlay") &&
+            !n.classList?.contains("immt-overlay-layer") &&
             !n.classList?.contains("immt-toast")
           ) {
             pendingQueue.push(n);
@@ -460,6 +630,7 @@
       if (resp?.ok) settings = resp.settings;
       scanAndTranslate();
       startObserving();
+      startSweep();
     });
   }
 
@@ -472,6 +643,7 @@
     io = null;
     queue = [];
     queued = new WeakSet();
+    stopSweep();
     overlayPairs.splice(0).forEach(({ el }) => el.remove());
     overlayLayer?.remove();
     overlayLayer = null;
@@ -483,7 +655,6 @@
     hideToast();
   }
 
-
   // ---------- grab text from editable regions (for the Document Translator) ----------
   function grabEditableText() {
     const roots = [...document.querySelectorAll(
@@ -493,10 +664,9 @@
     const blocks = [];
     const seen = new Set();
 
-    const pushText = (t) => {
-      const v = (t || "").replace(/\u00a0/g, " ").trim();
-      if (v.length < 2) return;
-      if (seen.has(v)) return;
+    const pushText = (txt) => {
+      const v = (txt || "").replace(/\u00a0/g, " ").trim();
+      if (v.length < 2 || seen.has(v)) return;
       seen.add(v);
       blocks.push(v);
     };
@@ -506,11 +676,9 @@
         root.value.split(/\n\s*\n/).forEach(pushText);
         continue;
       }
-      // Walk block-level children so paragraphs stay separate
       const kids = root.querySelectorAll("p,div,li,h1,h2,h3,h4,h5,h6,td,pre,blockquote");
       if (kids.length) {
         kids.forEach((k) => {
-          // only leaf-ish blocks, avoid duplicating nested containers
           if (k.querySelector("p,div,li,h1,h2,h3,h4,h5,h6,td,pre,blockquote")) return;
           pushText(k.innerText);
         });
@@ -519,7 +687,6 @@
       }
     }
 
-    // Fallback: nothing editable found — offer the main readable text instead
     if (!blocks.length) {
       const main = document.querySelector("main,article,[role='main']") || document.body;
       main.innerText.split(/\n\s*\n/).slice(0, 300).forEach(pushText);
@@ -527,7 +694,7 @@
     return blocks;
   }
 
-  chrome.runtime.onMessage.addListener((msg, s, sendResponse) => {
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "TOGGLE_TRANSLATE") {
       enabled ? disable() : enable();
       sendResponse({ ok: true, enabled });

@@ -1,4 +1,4 @@
-// pdf.js — PDF viewer with side-by-side / bilingual / overlay translation
+// pdf.js - PDF viewer with side-by-side / bilingual / overlay translation
 let pdfjsLib = null, pdfDoc = null;
 let pageInfos = [];
 const SCALE = 1.4;
@@ -55,7 +55,7 @@ function groupIntoLines(textContent, viewport) {
     const txt = ln.text.trim();
     if (!txt) continue;
     if (p && ln.y - (p.y + p.h) < p.h * 0.9 && Math.abs(ln.x - p.x) < p.h * 2 &&
-        !/[.!?:;。！？]$/.test(p.text.trim())) {
+        !/[.!?:;\u3002\uff01\uff1f]$/.test(p.text.trim())) {
       p.text += " " + txt;
       p.h = ln.y + ln.h - p.y;
       p.w = Math.max(p.w, ln.w);
@@ -88,7 +88,7 @@ function buildPageDom(n, viewport, mode) {
     left.style.height = viewport.height + "px";
     const ll = document.createElement("div");
     ll.className = "side-label";
-    ll.textContent = "译文 TRANSLATION";
+    ll.textContent = "TRANSLATION";
     left.appendChild(ll);
     left.appendChild(tlayer);
 
@@ -99,7 +99,7 @@ function buildPageDom(n, viewport, mode) {
     right.style.height = viewport.height + "px";
     const rl = document.createElement("div");
     rl.className = "side-label";
-    rl.textContent = "原文 ORIGINAL";
+    rl.textContent = "ORIGINAL";
     right.appendChild(rl);
     right.appendChild(canvas);
 
@@ -119,7 +119,7 @@ function buildPageDom(n, viewport, mode) {
 
 async function loadPdf(data) {
   await initPdfJs();
-  setStatus("Loading…");
+  setStatus("Loading...");
   pagesEl.innerHTML = "";
   pageInfos = [];
   dropEl.style.display = "none";
@@ -147,11 +147,11 @@ async function loadPdf(data) {
     });
     pageInfos.push({ pageNum: n, tlayer, lines, viewport, page });
 
-    setStatus(`Rendering ${n}/${pdfDoc.numPages}…`);
+    setStatus(`Rendering ${n}/${pdfDoc.numPages}...`);
   }
 
   const total = pageInfos.reduce((s, p) => s + p.lines.length, 0);
-  setStatus(`${pdfDoc.numPages} pages, ${total} text blocks — ready`);
+  setStatus(`${pdfDoc.numPages} pages, ${total} text blocks - ready`);
   translateBtn.disabled = false;
   translateBtn.classList.remove("ghost");
 }
@@ -219,7 +219,7 @@ async function translateAll() {
   const BATCH = 25;
   let done = 0, failed = 0;
 
-  // Fire all batches in parallel — the background worker throttles them.
+  // Fire all batches in parallel - the background worker throttles them.
   const jobs = [];
   for (let i = 0; i < all.length; i += BATCH) {
     const slice = all.slice(i, i + BATCH);
@@ -233,7 +233,7 @@ async function translateAll() {
           placeBlock(page, line, t, mode);
           done++;
         });
-        setStatus(`Translating… ${done + failed}/${all.length}`);
+        setStatus(`Translating... ${done + failed}/${all.length}`);
       })
     );
   }
@@ -242,7 +242,7 @@ async function translateAll() {
   if (errors.length && !done) {
     setStatus("Failed: " + String(errors[0]).slice(0, 160));
   } else {
-    setStatus(failed ? `Done — ${done} blocks, ${failed} failed` : `Done — ${done} blocks ✓`);
+    setStatus(failed ? `Done - ${done} blocks, ${failed} failed` : `Done - ${done} blocks \u2713`);
   }
   translateBtn.disabled = false;
 }
@@ -250,7 +250,7 @@ async function translateAll() {
 // ---- re-layout when view mode changes ----
 viewMode.addEventListener("change", async () => {
   if (!pdfDoc) return;
-  setStatus("Switching view…");
+  setStatus("Switching view...");
   const data = lastData;
   if (data) await loadPdf(data.slice(0));
 });
@@ -290,12 +290,12 @@ document.addEventListener("drop", (e) => {
   const src = new URLSearchParams(location.search).get("file");
   if (!src) return;
   try {
-    setStatus("Fetching PDF…");
+    setStatus("Fetching PDF...");
     const resp = await fetch(src);
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     lastData = new Uint8Array(await resp.arrayBuffer());
     await loadPdf(lastData.slice(0));
   } catch (e) {
-    setStatus("Could not fetch that PDF — open it manually. (" + e.message + ")");
+    setStatus("Could not fetch that PDF - open it manually. (" + e.message + ")");
   }
 })();

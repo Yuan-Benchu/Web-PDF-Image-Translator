@@ -98,7 +98,7 @@ function render() {
     div.querySelector(".loadModels").addEventListener("click", async (ev) => {
       const btn = ev.target;
       const old = btn.textContent;
-      btn.textContent = "Loading…";
+      btn.textContent = "Loading...";
       btn.disabled = true;
       const resp = await msg("FETCH_MODELS", { provider: { ...p } });
       btn.disabled = false;
@@ -130,19 +130,19 @@ function render() {
       btn.disabled = true;
       m.textContent = "";
       out.style.display = "block";
-      out.textContent = "Testing…";
+      out.textContent = "Testing...";
       const resp = await msg("TEST_PROVIDER", { provider: { ...p } });
       btn.disabled = false;
       if (!resp?.ok) {
-        out.textContent = "❌ FAILED\n\n" + resp?.error;
+        out.textContent = "\u274c FAILED\n\n" + resp?.error;
         out.style.color = "#c5221f";
         return;
       }
       out.style.color = "#137333";
       out.textContent =
-        `✅ WORKING  (${resp.result.ms} ms)\n\n` +
+        `\u2705 WORKING  (${resp.result.ms} ms)\n\n` +
         `Input:  Hello, world.\n` +
-        `Output: ${resp.result.translated || "(could not parse — raw below)"}\n` +
+        `Output: ${resp.result.translated || "(could not parse - raw below)"}\n` +
         (resp.result.translated ? "" : "\nRaw response:\n" + resp.result.raw);
     });
 
@@ -212,7 +212,7 @@ async function save() {
     concurrency: Number(document.getElementById("concurrency").value),
   });
   const st = document.getElementById("status");
-  st.textContent = "Saved ✓";
+  st.textContent = "Saved \u2713";
   setTimeout(() => (st.textContent = ""), 2000);
 }
 
@@ -227,18 +227,18 @@ document.getElementById("clearCacheBtn").addEventListener("click", async () => {
 document.getElementById("testBtn").addEventListener("click", async () => {
   const out = document.getElementById("testResult");
   out.style.display = "block";
-  out.textContent = "Saving settings and testing…";
+  out.textContent = "Saving settings and testing...";
   await save();
 
   const resp = await msg("TRANSLATE_BATCH", {
     texts: ["Hello, world. This is a connection test."],
   });
-  if (!resp) { out.textContent = "❌ No response from extension"; return; }
-  if (!resp.ok) { out.textContent = "❌ FAILED\n\n" + resp.error; return; }
+  if (!resp) { out.textContent = "\u274c No response from extension"; return; }
+  if (!resp.ok) { out.textContent = "\u274c FAILED\n\n" + resp.error; return; }
   const r = resp.results?.[0];
   out.textContent = r
-    ? "✅ SUCCESS\n\nInput:  Hello, world. This is a connection test.\nOutput: " + r
-    : "⚠️ Request succeeded but returned nothing.";
+    ? "\u2705 SUCCESS\n\nInput:  Hello, world. This is a connection test.\nOutput: " + r
+    : "\u26a0\ufe0f Request succeeded but returned nothing.";
 });
 
 load();

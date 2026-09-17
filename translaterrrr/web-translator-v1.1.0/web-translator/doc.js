@@ -1,3 +1,8 @@
+const t = (key, subs) => {
+  try { return chrome.i18n.getMessage(key, subs) || key; }
+  catch (e) { return key; }
+};
+
 const srcEl = document.getElementById("src");
 const outEl = document.getElementById("out");
 const statusEl = document.getElementById("status");
@@ -28,7 +33,7 @@ async function translate() {
   const nodes = blocks.map((b) => {
     const d = document.createElement("div");
     d.className = "seg pending";
-    d.textContent = "翻译中…";
+    d.textContent = t("docPending");
     outEl.appendChild(d);
     return d;
   });
@@ -48,7 +53,7 @@ async function translate() {
           slice.forEach((_, k) => {
             nodes[start + k].className = "seg";
             nodes[start + k].style.color = "#c5221f";
-            nodes[start + k].textContent = "失败: " + String(resp?.error || "unknown").slice(0, 120);
+            nodes[start + k].textContent = t("docFailed") + " " + String(resp?.error || "unknown").slice(0, 120);
           });
           failed += slice.length;
           return;
@@ -63,17 +68,17 @@ async function translate() {
           } else {
             node.className = "seg";
             node.style.color = "#c5221f";
-            node.textContent = "（未翻译）";
+            node.textContent = t("docNotTranslated");
             failed++;
           }
         });
-        setStatus(`Translating… ${done + failed}/${blocks.length}`);
+        setStatus(`Translating... ${done + failed}/${blocks.length}`);
       })
     );
   }
 
   await Promise.all(jobs);
-  setStatus(failed ? `Done — ${done} blocks, ${failed} failed` : `Done — ${done} blocks ✓`);
+  setStatus(failed ? `Done - ${done} blocks, ${failed} failed` : `Done - ${done} blocks \u2713`);
   translateBtn.disabled = false;
 }
 
@@ -83,7 +88,7 @@ document.getElementById("copyBtn").addEventListener("click", async () => {
   const text = lastTranslation.filter(Boolean).join("\n\n");
   if (!text) { setStatus("Nothing to copy yet"); return; }
   await navigator.clipboard.writeText(text);
-  setStatus("Translation copied ✓");
+  setStatus("Translation copied \u2713");
 });
 
 document.getElementById("clearBtn").addEventListener("click", () => {
@@ -111,7 +116,7 @@ srcEl.addEventListener("keydown", (e) => {
       srcEl.value = immt_doc_input.join("\n\n");
       setStatus(
         `Imported ${immt_doc_input.length} blocks` +
-        (immt_doc_source ? ` from “${immt_doc_source}”` : "")
+        (immt_doc_source ? ` from "${immt_doc_source}"` : "")
       );
       await chrome.storage.local.remove(["immt_doc_input", "immt_doc_source"]);
     } else {

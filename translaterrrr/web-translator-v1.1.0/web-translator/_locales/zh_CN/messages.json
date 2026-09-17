@@ -1,0 +1,89 @@
+{
+  "extName": {
+    "message": "Web Translator"
+  },
+  "extDescription": {
+    "message": "双语对照网页翻译，内置免费引擎，可选接入 AI 服务"
+  },
+  "toastDone": {
+    "message": "已翻译 $COUNT$ 段，继续滚动可翻译更多",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "toastDonePartial": {
+    "message": "已翻译 $DONE$ 段，$FAILED$ 段失败",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "failed": {
+        "content": "$2"
+      }
+    }
+  },
+  "toastProgress": {
+    "message": "翻译中… $DONE$/$TOTAL$",
+    "placeholders": {
+      "done": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "toastExtError": {
+    "message": "扩展错误："
+  },
+  "toastFailed": {
+    "message": "翻译失败："
+  },
+  "toastNothing": {
+    "message": "本页没有找到需要翻译的内容"
+  },
+  "errNoApiKey": {
+    "message": "API Key 未配置，请到设置页填写"
+  },
+  "errNoBaseUrl": {
+    "message": "Base URL 未填写"
+  },
+  "errBadKey": {
+    "message": "API Key 无效或无权限。"
+  },
+  "errNoCredit": {
+    "message": "账户余额不足。"
+  },
+  "errBadEndpoint": {
+    "message": "接口地址或模型名有误。"
+  },
+  "errProviderMissing": {
+    "message": "未找到所选翻译服务，请到设置页检查"
+  },
+  "errImgDownload": {
+    "message": "无法下载图片"
+  },
+  "errImgTooBig": {
+    "message": "图片过大（超过 5MB）"
+  },
+  "errNeedVisionProvider": {
+    "message": "图片识别需要选择一个支持视觉的 AI 服务（设置页）"
+  },
+  "errNoVision": {
+    "message": "不支持图片识别，请改用支持视觉的服务（如 Gemini / GPT-4o / Claude）"
+  },
+  "errEmptyModelList": {
+    "message": "接口返回了空的模型列表"
+  },
+  "docPending": {
+    "message": "翻译中…"
+  },
+  "docFailed": {
+    "message": "失败："
+  },
+  "docNotTranslated": {
+    "message": "（未翻译）"
+  }
+}

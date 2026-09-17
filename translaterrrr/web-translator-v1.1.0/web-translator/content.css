@@ -1,4 +1,5 @@
-/* Translation text — rendered as its own line inside the original element,
+@charset "UTF-8";
+/* Translation text - rendered as its own line inside the original element,
    so it never breaks table rows, flex layouts or grid cells. */
 .immt-inserted {
   display: block !important;
@@ -23,6 +24,14 @@
   position: static !important;
   vertical-align: baseline !important;
   box-sizing: border-box !important;
+  /* A page that sets vertical writing mode must not rotate our line. */
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  min-width: 0 !important;
+  height: auto !important;
+  clip: auto !important;
+  clip-path: none !important;
+  overflow: visible !important;
   opacity: 0.95;
 }
 

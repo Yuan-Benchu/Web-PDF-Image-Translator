@@ -37,15 +37,15 @@ async function init() {
   const canVision = provider?.vision;
   if (settings.translateImages && !canVision) {
     imgNote.textContent = settings.engine === "free"
-      ? "⚠ The free engine can't read images. Pick a vision provider in Settings."
-      : `⚠ ${provider?.name || "This provider"} has no vision support. Pick one that does in Settings.`;
+      ? "\u26a0 The free engine can't read images. Pick a vision provider in Settings."
+      : `\u26a0 ${provider?.name || "This provider"} has no vision support. Pick one that does in Settings.`;
     imgNote.style.color = "#c5221f";
   }
 
   imgToggle.addEventListener("change", async () => {
     await send("SET_SETTING", { key: "translateImages", value: imgToggle.checked });
     if (imgToggle.checked && !canVision) {
-      imgNote.textContent = "⚠ Current engine can't read images — choose a vision provider in Settings.";
+      imgNote.textContent = "\u26a0 Current engine can't read images - choose a vision provider in Settings.";
       imgNote.style.color = "#c5221f";
     } else {
       imgNote.textContent = "Reads text inside images. Needs a vision-capable AI provider.";
@@ -57,7 +57,7 @@ async function init() {
   if (!tab?.id) return;
   const state = await tabSend(tab.id, { type: "GET_STATE" });
   if (!state) {
-    toggleBtn.textContent = "Not available here — reload the page";
+    toggleBtn.textContent = "Not available here - reload the page";
     toggleBtn.disabled = true;
     return;
   }
